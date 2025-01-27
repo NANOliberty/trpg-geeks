@@ -12,3 +12,64 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id            String      @id @default(cuid())
+  realName      String
+  nickname      String      @unique
+  password      String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  characters    Character[]
+  hostingSessions Session[] @relation("SessionHost")
+  joinedSessions SessionParticipant[]
+}
+
+model Character {
+  id          String   @id @default(cuid())
+  name        String
+  class       String
+  level       Int      @default(1)
+  stats       Json     
+  inventory   Json?    
+  background  String?  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  sessions    SessionParticipant[]
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  status      SessionStatus @default(RECRUITING)
+  maxPlayers  Int
+  startTime   DateTime
+  endTime     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  hostId      String
+  host        User     @relation("SessionHost", fields: [hostId], references: [id])
+  participants SessionParticipant[]
+}
+
+model SessionParticipant {
+  id          String    @id @default(cuid())
+  sessionId   String
+  userId      String
+  characterId String?
+  joinedAt    DateTime  @default(now())
+  session     Session   @relation(fields: [sessionId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+  character   Character? @relation(fields: [characterId], references: [id])
+}
+
+enum SessionStatus {
+  RECRUITING
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
